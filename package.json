@@ -1,0 +1,15 @@
+{
+  "name": "klickern",
+  "version": "2026.10.30",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Telefonen och hörlurarna som clicker till PowerPoint.",
+  "scripts": {
+    "start": "node program.mjs",
+    "bygg": "node bygg.mjs"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  }
+}

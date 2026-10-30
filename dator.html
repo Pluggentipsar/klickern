@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Klickern</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23131211'/%3E%3Cpath d='M16 6v20M8 14l8-8 8 8' fill='none' stroke='%23f08a5d' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<!--
+  Klickerns datorsida (30 oktober 2026): QR-koden som telefonen skannar, på samma wifi eller genom
+  Tailscale, och vad Klickern ser i PowerPoint just nu. Sidan svarar bara på den egna datorn.
+-->
+<style>
+  :root {
+    --bg: #131211; --text: #efe9e1; --muted: #9a938a; --linje: #34302c; --papper: #f4efe6;
+    --accent: #f08a5d; --accent-yta: rgba(240, 138, 93, 0.12);
+    --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); font: 17px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 48px 32px 64px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; padding-bottom: 28px; border-bottom: 1px solid var(--linje); }
+  .ordmarke { display: flex; align-items: center; gap: 14px; margin: 0; font-size: 2.6rem; font-weight: 750; letter-spacing: -0.03em; line-height: 1; }
+  .ordmarke svg { width: 0.9em; height: 0.9em; }
+  .under { margin: 8px 0 0; color: var(--muted); }
+  .version { font: 0.8rem var(--mono); color: var(--muted); }
+  .rutnat { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 56px; padding-top: 40px; }
+  @media (max-width: 860px) { .rutnat { grid-template-columns: 1fr; } }
+
+  .flikar { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 1px solid var(--linje); }
+  .flikar button { padding: 10px 0; margin-right: 28px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--muted); font: inherit; font-weight: 600; cursor: pointer; }
+  .flikar button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+  .qr { position: relative; aspect-ratio: 1; padding: 28px; background: var(--papper); border-radius: 6px; }
+  .qr svg { display: block; width: 100%; height: 100%; }
+  .qr .tom { position: absolute; inset: 0; display: grid; place-items: center; padding: 32px; color: #6d675f; text-align: center; font-size: 0.95rem; }
+  .adress { display: flex; align-items: center; gap: 10px; margin: 14px 0 0; }
+  .adress code { flex: 1; min-width: 0; overflow-wrap: anywhere; font: 0.82rem var(--mono); color: var(--muted); }
+  button.knapp { padding: 9px 16px; border: 1px solid var(--linje); border-radius: 8px; background: none; color: var(--text); font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+  button.knapp:hover { border-color: var(--muted); }
+  button.knapp.huvud { border-color: var(--accent); color: var(--accent); }
+  button.knapp:disabled { opacity: 0.5; cursor: default; }
+  .notis { margin: 18px 0 0; color: var(--muted); font-size: 0.92rem; }
+  .notis b { color: var(--text); font-weight: 600; }
+  .notis a { color: var(--accent); }
+
+  h2 { margin: 0 0 6px; font: 600 0.75rem var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .rad { padding: 0 0 26px; margin-bottom: 26px; border-bottom: 1px solid var(--linje); }
+  .rad:last-child { border-bottom: 0; }
+  .stort { margin: 0; font-size: 1.6rem; font-weight: 650; line-height: 1.25; letter-spacing: -0.01em; }
+  .stort em { font-style: normal; color: var(--accent); }
+  .liten { margin: 6px 0 0; color: var(--muted); }
+  ol.steg { margin: 0; padding: 0; list-style: none; counter-reset: steg; }
+  ol.steg li { position: relative; padding: 0 0 12px 40px; counter-increment: steg; }
+  ol.steg li::before { content: counter(steg); position: absolute; left: 0; top: 0; width: 26px; font: 0.85rem/1.7 var(--mono); color: var(--accent); }
+  .val { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <p class="ordmarke"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4v24M6 14L16 4l10 10" fill="none" stroke="#f08a5d" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Klickern</p>
+      <p class="under">Telefonen och hörlurarna som clicker till PowerPoint.</p>
+    </div>
+    <span class="version" id="version"></span>
+  </header>
+
+  <div class="rutnat">
+    <section aria-label="Anslut telefonen">
+      <div class="flikar" role="tablist">
+        <button type="button" role="tab" id="flik-wifi" aria-selected="true">Samma wifi</button>
+        <button type="button" role="tab" id="flik-tailscale" aria-selected="false">Tailscale</button>
+      </div>
+      <div class="qr" id="qr"><div class="tom">Letar efter datorns adress …</div></div>
+      <p class="adress"><code id="url"></code><button type="button" class="knapp" id="kopiera" hidden>Kopiera</button></p>
+      <div id="notis"></div>
+    </section>
+
+    <section aria-label="Läget">
+      <div class="rad">
+        <h2>PowerPoint</h2>
+        <p class="stort" id="powerpoint">Läser av …</p>
+        <p class="liten" id="powerpoint-mer"></p>
+      </div>
+      <div class="rad">
+        <h2>Telefonen</h2>
+        <p class="stort" id="telefoner">Ingen telefon ansluten</p>
+      </div>
+      <div class="rad">
+        <h2>Så gör du</h2>
+        <ol class="steg">
+          <li>Skanna QR-koden med telefonens kamera och öppna länken.</li>
+          <li>Tryck på <b>Styr med hörlurarna</b> om du vill byta bild med hörlurarnas knappar.</li>
+          <li>Starta bildspelet i PowerPoint som vanligt, eller från telefonen.</li>
+          <li>Låt Klickerns fönster vara öppet medan du föreläser.</li>
+        </ol>
+      </div>
+      <div class="rad">
+        <h2>Länken</h2>
+        <p class="liten">QR-koden innehåller en hemlig nyckel, så bara den som har koden kan styra. Har någon annan fått den, skapa en ny. Telefoner med den gamla länken slutar då fungera.</p>
+        <div class="val"><button type="button" class="knapp" id="ny">Ny länk</button></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+  const VERSION = "%VERSION%";
+  const $ = (id) => document.getElementById(id);
+  let lage = null;
+  let flik = (() => { try { return localStorage.getItem("klickern-flik"); } catch { return null; } })();
+  let besked = null; // svar från Tailscale-knappen
+  let upptagen = false;
+
+  const post = (vag) => fetch(vag, { method: "POST", headers: { "x-klickern": "1" } }).then((r) => r.json()).catch(() => ({ ok: false, fel: "Klickern svarade inte." }));
+  const el = (tagg, text, attr = {}) => { const e = document.createElement(tagg); if (text) e.textContent = text; Object.assign(e, attr); return e; };
+
+  function visaPowerpoint(p) {
+    const mer = $("powerpoint-mer");
+    mer.textContent = "";
+    if (!p) { $("powerpoint").textContent = "Läser av …"; return; }
+    if (p.lage === "bildspel") {
+      $("powerpoint").replaceChildren("Visar ", el("em", p.titel), p.slut ? "" : `, bild ${p.bild} av ${p.antal}`);
+      mer.textContent = p.slut ? "Slutet av bildspelet." : p.status === 3 || p.status === 4 ? "Skärmen är svart." : "";
+    } else if (p.lage === "redigering") {
+      $("powerpoint").replaceChildren(el("em", p.titel), " är öppen men visas inte");
+      mer.textContent = "Starta bildspelet som vanligt, eller från telefonen. Tills dess skickar telefonen piltangenter.";
+    } else if (p.lage === "ingen") {
+      $("powerpoint").textContent = "PowerPoint visar inget";
+      mer.textContent = "Utan bildspel skickar telefonen piltangenter till fönstret som ligger överst, till exempel en PDF eller en presentation i webbläsaren.";
+    } else if (p.lage === "upptagen") {
+      $("powerpoint").textContent = "PowerPoint svarar inte just nu";
+      mer.textContent = "Är en dialogruta öppen i PowerPoint?";
+    } else {
+      $("powerpoint").textContent = "Klickern når inte PowerPoint";
+      mer.textContent = p.fel ?? "";
+    }
+  }
+
+  function visaQr(svg, url) {
+    const ruta = $("qr");
+    if (svg) ruta.innerHTML = svg;
+    else ruta.replaceChildren(el("div", url === null ? "Ingen QR-kod ännu." : "", { className: "tom" }));
+    $("url").textContent = url ?? "";
+    $("kopiera").hidden = !url;
+    $("kopiera").onclick = () => navigator.clipboard?.writeText(url);
+  }
+
+  function notis(...delar) {
+    const n = $("notis");
+    n.replaceChildren(...delar.map((d) => (typeof d === "string" ? el("p", d, { className: "notis" }) : d)));
+  }
+
+  function visaWifi(l) {
+    const a = l.wifi[0];
+    if (!a) {
+      visaQr(null, null);
+      $("qr").firstChild.textContent = "Datorn verkar inte vara ansluten till något nätverk.";
+      notis("Anslut datorn till wifi, eller använd Tailscale.");
+      return;
+    }
+    visaQr(a.qr, a.url);
+    const andra = l.wifi.slice(1).map((x) => `${x.adress} (${x.namn})`).join(", ");
+    notis(
+      el("p", "", { className: "notis", innerHTML: "Telefonen måste vara på <b>samma wifi</b> som datorn." }),
+      "Laddar sidan aldrig i telefonen? Många skol- och konferensnät stänger av trafik mellan enheter. Använd då Tailscale. Första gången kan Windows fråga om brandväggen: välj Tillåt.",
+      "På wifi kan telefonens skärm slockna efter en stund. Med Tailscale hålls den tänd.",
+      ...(andra ? [`Datorn har fler adresser: ${andra}.`] : []),
+    );
+  }
+
+  function visaTailscale(l) {
+    const t = l.tailscale;
+    if (!t.finns) {
+      visaQr(null, null);
+      $("qr").firstChild.textContent = "Tailscale är inte installerat.";
+      const a = el("a", "tailscale.com/download", { href: "https://tailscale.com/download", target: "_blank", rel: "noopener" });
+      const p = el("p", "", { className: "notis" });
+      p.append("Tailscale kopplar ihop datorn och telefonen privat, på vilket nät som helst. Installera det på båda från ", a, ", logga in med samma konto och kom tillbaka hit.");
+      notis(p);
+      return;
+    }
+    if (!t.igang) {
+      visaQr(null, null);
+      $("qr").firstChild.textContent = "Tailscale är inte igång.";
+      notis("Starta Tailscale på datorn och logga in. Sidan märker det själv.");
+      return;
+    }
+    if (!t.aktiv) {
+      visaQr(null, null);
+      $("qr").firstChild.textContent = "Klickern är inte påslagen i Tailscale.";
+      const knapp = el("button", upptagen ? "Slår på …" : "Slå på Tailscale för Klickern", { type: "button", className: "knapp huvud", disabled: upptagen });
+      knapp.onclick = async () => {
+        upptagen = true; besked = null; rita();
+        besked = await post("/dator/tailscale/pa");
+        upptagen = false; await hamta();
+      };
+      const delar = [el("div", "", { className: "val" })];
+      delar[0].append(knapp);
+      if (besked?.länk) {
+        const p = el("p", "", { className: "notis" });
+        p.append(el("b", "Tailscale behöver https för ditt nätverk. "), "Öppna ", el("a", "länken", { href: besked.länk, target: "_blank", rel: "noopener" }), ", godkänn och tryck sedan på knappen igen.");
+        delar.push(p);
+      } else if (besked && !besked.ok) delar.push(el("p", besked.fel ?? "Det gick inte.", { className: "notis" }));
+      delar.push("Klickern hamnar då på en privat adress som bara dina egna enheter i Tailscale når.");
+      notis(...delar);
+      return;
+    }
+    visaQr(t.qr, t.telefon);
+    const av = el("button", "Stäng av Tailscale för Klickern", { type: "button", className: "knapp" });
+    av.onclick = async () => { await post("/dator/tailscale/av"); besked = null; await hamta(); };
+    const val = el("div", "", { className: "val" });
+    val.append(av);
+    notis("Telefonen behöver Tailscale-appen, påslagen och inloggad med samma konto som datorn. Det fungerar på vilket nät som helst, och skärmen hålls tänd.", val);
+  }
+
+  function rita() {
+    if (!lage) return;
+    $("version").textContent = `${lage.dator} · version ${VERSION}`;
+    const aktiv = flik === "tailscale" || (flik === null && lage.tailscale.aktiv) ? "tailscale" : "wifi";
+    $("flik-wifi").setAttribute("aria-selected", String(aktiv === "wifi"));
+    $("flik-tailscale").setAttribute("aria-selected", String(aktiv === "tailscale"));
+    if (aktiv === "wifi") visaWifi(lage); else visaTailscale(lage);
+    visaPowerpoint(lage.powerpoint);
+    const n = lage.telefoner;
+    $("telefoner").textContent = n === 0 ? "Ingen telefon ansluten" : n === 1 ? "En telefon ansluten" : `${n} telefoner anslutna`;
+  }
+
+  async function hamta() {
+    try {
+      const r = await fetch("/dator/lage", { cache: "no-store" });
+      if (r.ok) lage = await r.json();
+    } catch {
+      $("powerpoint").textContent = "Klickern är avstängd";
+      $("powerpoint-mer").textContent = "Starta Klickern igen och ladda om sidan.";
+      return;
+    }
+    rita();
+  }
+
+  for (const [id, namn] of [["flik-wifi", "wifi"], ["flik-tailscale", "tailscale"]]) {
+    $(id).addEventListener("click", () => { flik = namn; try { localStorage.setItem("klickern-flik", namn); } catch {} rita(); });
+  }
+  $("ny").addEventListener("click", async () => {
+    if (!confirm("Skapa en ny länk? Telefoner med den gamla länken slutar fungera.")) return;
+    await post("/dator/ny-nyckel");
+    await hamta();
+  });
+
+  hamta();
+  setInterval(() => { if (!document.hidden && !upptagen) hamta(); }, 2000);
+</script>
+</body>
+</html>
