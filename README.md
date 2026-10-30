@@ -9,7 +9,7 @@ Du går där du vill i rummet. Telefonen visar dina anteckningar och vilken bild
 ## Kom igång
 
 1. Hämta `Klickern.exe` och lägg den där du hittar den, till exempel på skrivbordet.
-2. Starta filen. Windows varnar första gången, eftersom programmet inte är kodsignerat: klicka på **Mer info** och sedan på **Kör ändå**.
+2. Starta filen. Windows varnar första gången, eftersom programmet inte är kodsignerat: klicka på **Mer information** och sedan på **Kör ändå**.
 3. Ett fönster och en sida i webbläsaren öppnas. Skanna QR-koden med telefonens kamera och öppna länken. Låt fönstret vara öppet medan du föreläser.
 4. Tryck på **Styr med hörlurarna** i telefonen om du vill använda hörlurarnas knappar.
 5. Starta bildspelet i PowerPoint som vanligt, eller från telefonen.
